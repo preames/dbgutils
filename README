@@ -1,0 +1,18 @@
+dbgutils - This mini-library contains a number of routines I find useful for debugging programs.  The main areas of functionality are:
+- Routines to trap into a debugger
+- Routines to print backtraces (stack traces) at arbitrary points in code
+- A generic dump( val ) routine for debugging purposes.
+- A set of assert macros with support for backtraces, trapping to the debugger, abort/noabort variants, etc..
+
+Usage: 
+- The library is primarily intended for C++11.  However, it can also be built (with some missing features) by a C compiler.  Currently, there is not a C++98 mode, but one could be added if desired.
+- The Makefile provided generates a libdbgutils.so library that you can link against.  Alternatively, you can simply add the source files to your existing build system.  
+- To get everything, you should either add a _DEBUG macro to your build environment or look into the DBGUTILS_ENABLE_* macros.
+- You will need libunwind installed to build the backtrace routines.
+
+Provided under a BSD 3-clause license.
+
+The code included in this release is largely new and only moderately tested.  The ideas were pulled from previous projects and code bases I've worked on, but I rewrote it from scratch to ensure licensing remained clear. I do not recommend you add this to release builds of production code base without further validation.  In particular, not all the functionality is disabled in non-release builds.  Make sure you're comfortable with what remains.
+
+If you find this useful, please let me know.  I'm going to be integrating it into my own work, but may or may not continue to update the public copy.  If you want updated versions, speak up.
+
