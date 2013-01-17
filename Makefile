@@ -1,3 +1,4 @@
+# wherever you have libunwind installed
 LDFLAGS=-L/usr/local/lib -lunwind
 CXXFLAGS= -O3 -fPIC -std=c++0x
 
@@ -9,7 +10,6 @@ all:
 	clang++ $(CXXFLAGS) test.cxx libdbgutils.so -o test-cxx.out #C++ usage
 
 test:
-###	export LD_LIBRARY_PATH=./
 	./test-c.out
 	./test-cxx.out
 

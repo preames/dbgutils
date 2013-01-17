@@ -16,21 +16,21 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 // Includes functionality to trap into the debugger from
 // a given statement in source code.
-#include "trap.h"
+#include "dbgutils/trap.h"
 
 // Routines for printing a stacktrace of the current thread
 // and some special abort/exit routines to print stacktraces
 // before termination.
-#include "backtrace.h"
+#include "dbgutils/backtrace.h"
 
 // Special assertion macros (similar to cstdlib's assert.h) 
 // with additional functionality like optionally continuing, 
 // printing backtraces, or breaking into the debugger.
-#include "assert.h"
+#include "dbgutils/assert.h"
 
 // Routines for dumping the contents of pretty much anything
 // Currently C++ only
-#include "dump.h"
+#include "dbgutils/dump.h"
 
 
 #endif //__DBGUTILS_H

@@ -30,5 +30,10 @@ int main() {
 
   DBGUTILS_CALL_DEBUG_TRAP_FUNC();
 
+  DBGUTILS_ASSERT(1);
+  DBGUTILS_ASSERT_ABORT(1);
+  DBGUTILS_ASSERT_NOABORT(1);
+  DBGUTILS_EXPECT(1);
+
   dbgutils_exit_with_backtrace(0);
 }

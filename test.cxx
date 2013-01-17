@@ -73,5 +73,12 @@ int main() {
 
   DBGUTILS_CALL_DEBUG_TRAP_FUNC();
 
+
+  DBGUTILS_ASSERT(true);
+  DBGUTILS_ASSERT_ABORT(true);
+  DBGUTILS_ASSERT_NOABORT(true);
+  DBGUTILS_EXPECT(true);
+
+
   dbgutils::exit_with_backtrace(0);
 }

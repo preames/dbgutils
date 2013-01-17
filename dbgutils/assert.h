@@ -29,10 +29,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 //__STRING comes from GCC headers (I think - model after GNU assert.h)
 //TODO: add branch hints here
-#define DBGUTILS_ASSERT(exp) if(!(exp)) { dbgutils_assert_fail(__STRING(expr), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO) } else {}
-#define DBGUTILS_ASSERT_ABORT(exp) if(!(exp)) { dbgutils_assert_abort_fail(__STRING(expr), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO) } else {}
-#define DBGUTILS_ASSERT_NOABORT(exp) if(!(exp)) { dbgutils_assert_noabort_fail(__STRING(expr), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO) } else {}
-#define DBGUTILS_EXPECT(exp) if(!(exp)) { dbgutils_assert_noabort_fail(__STRING(expr), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO) } else {}
+#define __DBGUTILS_STRING(exp) #exp
+#define DBGUTILS_ASSERT(exp) if(!(exp)) { dbgutils_assert_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}
+#define DBGUTILS_ASSERT_ABORT(exp) if(!(exp)) { dbgutils_assert_abort_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}
+#define DBGUTILS_ASSERT_NOABORT(exp) if(!(exp)) { dbgutils_assert_noabort_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}
+#define DBGUTILS_EXPECT(exp) if(!(exp)) { dbgutils_assert_noabort_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}
 
 #ifdef __cplusplus
 extern "C" {

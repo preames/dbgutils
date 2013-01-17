@@ -32,38 +32,39 @@ namespace {
   char print_buffer[500];
 }
 
-void dbgutils_print_backtrace (void) {
-  unw_cursor_t cursor; unw_context_t uc;
-  unw_word_t ip, sp;
-  int i;
-
-  unw_getcontext(&uc);
-  unw_init_local(&cursor, &uc);
-  for(i = 0; unw_step(&cursor) > 0; i++) {
-    //  while () {
-    char buf[200];
+extern "C" {
+  void dbgutils_print_backtrace (void) {
+    unw_cursor_t cursor; unw_context_t uc;
+    unw_word_t ip, sp;
+    int i;
     
-    unw_get_proc_name(&cursor, buf, 200, NULL);
-    unw_get_reg(&cursor, UNW_REG_IP, &ip);
-    unw_get_reg(&cursor, UNW_REG_SP, &sp);
-    snprintf(print_buffer, 500, 
-             "%s, ip = %lx, sp = %lx\n", buf, (long) ip, (long) sp);
-    print_buffer[499] = '\0';
-    fprintf(stderr, "%s", print_buffer);
+    unw_getcontext(&uc);
+    unw_init_local(&cursor, &uc);
+    for(i = 0; unw_step(&cursor) > 0; i++) {
+      //  while () {
+      char buf[200];
+    
+      unw_get_proc_name(&cursor, buf, 200, NULL);
+      unw_get_reg(&cursor, UNW_REG_IP, &ip);
+      unw_get_reg(&cursor, UNW_REG_SP, &sp);
+      snprintf(print_buffer, 500, 
+               "%s, ip = %lx, sp = %lx\n", buf, (long) ip, (long) sp);
+      print_buffer[499] = '\0';
+      fprintf(stderr, "%s", print_buffer);
+    }
+    fprintf(stderr, "%s", "\n");
   }
-  fprintf(stderr, "%s", "\n");
-}
 
-void dbgutils_exit_with_backtrace (int status) {
-  print_backtrace();
-  exit(status);
-}
+  void dbgutils_exit_with_backtrace (int status) {
+    print_backtrace();
+    exit(status);
+  }
 
-void dbgutils_abort_with_backtrace() {
-  print_backtrace();
-  abort();
+  void dbgutils_abort_with_backtrace() {
+    print_backtrace();
+    abort();
+  }
 }
-
 namespace dbgutils {
   void print_backtrace() { dbgutils_print_backtrace(); }
   void exit_with_backtrace(int status) { dbgutils_exit_with_backtrace(status); }
