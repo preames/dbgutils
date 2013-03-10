@@ -10,36 +10,51 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __DBGUTILS_H
-#define __DBGUTILS_H
+#ifndef __DBGUTILS_INVARIANTS_H_
+#define __DBGUTILS_INVARIANTS_H_
 
-// Make sure conflicting definitions of macros aren't being used and abort
-// the build cleanly if found.
-#include "dbgutils/macro-sanity.h"
+#error "NOT IMPLEMENTED"
 
 
-// Includes functionality to trap into the debugger from
-// a given statement in source code.
-#include "dbgutils/trap.h"
 
-// Routines for printing a stacktrace of the current thread
-// and some special abort/exit routines to print stacktraces
-// before termination.
-#include "dbgutils/backtrace.h"
+#include <vector>
+#include <functional>
 
-// Special assertion macros (similar to cstdlib's assert.h) 
-// with additional functionality like optionally continuing, 
-// printing backtraces, or breaking into the debugger.
-#include "dbgutils/assert.h"
+#include "assert.h"
 
-// Handling for function precondition (ensures) and post conditions
-// (ensures) being declared at the top of function (inside the body 
-// brackets) and checking them at runtime.
-#include "dbgutils/ensures-requires.h"
+/*
 
-// Routines for dumping the contents of pretty much anything
-// Currently C++ only
-#include "dbgutils/dump.h"
+As a thought excerice, you could macro-ize much of this.  
+I think you could reduce it to a DEFINE_INVARIANT(exp) - using lambda, inline member initializers, and _function_ based macro safety - and a SUPPORTS_INVARIANTS macro in each public function - which simply executes each in turn.
 
+Not sure this is worth doing yet though.  
+ */
 
-#endif //__DBGUTILS_H
+class test {
+  std::vector< std::function<bool(test*)> > m_inv_functions;
+
+  bool my_test_invariant() { return true; }
+
+  test() {
+    m_inv_functions.push_back( [](test* self) { 
+        bool b = self->my_test_invariant(); //separate the assignment for clear debugging errors
+        return b; 
+      } 
+    );
+  }
+
+  void do_something() {
+    for( auto f : m_inv_functions ) {
+      DBGUTILS_ASSERT(  f(this) );
+    }
+#if 0
+    on_scope_exit( [&]() {
+        for( auto f : this->m_inv_functions ) {
+          DBGUTILS_ASSERT(f(test));
+        }
+      });
+#endif
+  }
+};
+  
+#endif //__DBGUTILS_INVARIANTS_H_

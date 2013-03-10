@@ -10,36 +10,21 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __DBGUTILS_H
-#define __DBGUTILS_H
-
-// Make sure conflicting definitions of macros aren't being used and abort
-// the build cleanly if found.
-#include "dbgutils/macro-sanity.h"
+#ifndef __DBGUTILS_MACRO_SANITY_H_
+#define __DBGUTILS_MACRO_SANITY_H_
 
 
-// Includes functionality to trap into the debugger from
-// a given statement in source code.
-#include "dbgutils/trap.h"
+#if (defined DEBUG) || (defined _DEBUG) || (defined __DEBUG) || (defined __DEBUG__)
+#define DBGUTILS_DEBUG_MACRO_DEFINED
+#endif
 
-// Routines for printing a stacktrace of the current thread
-// and some special abort/exit routines to print stacktraces
-// before termination.
-#include "dbgutils/backtrace.h"
+#if (defined NDEBUG) || (defined _NDEBUG) || (defined __NDEBUG) || (defined __NDEBUG__) || (defined NODEBUG) || (defined _NODEBUG) || (defined __NODEBUG) || (defined __NODEBUG__)
+#define DBGUTILS_NODEBUG_MACRO_DEFINED
+#endif
 
-// Special assertion macros (similar to cstdlib's assert.h) 
-// with additional functionality like optionally continuing, 
-// printing backtraces, or breaking into the debugger.
-#include "dbgutils/assert.h"
+#if (defined DBGUTILS_DEBUG_MACRO_DEFINED) && (defined DBGUTILS_NODEBUG_MACRO_DEFINED)
+#error "You have conflicting macros defined.  Building in both debug and not in debug mode at once is not possible and is entirely non-sensical.  Please correct your macro madness and retry a build (preferrably using a *clean* build)."
+#endif
 
-// Handling for function precondition (ensures) and post conditions
-// (ensures) being declared at the top of function (inside the body 
-// brackets) and checking them at runtime.
-#include "dbgutils/ensures-requires.h"
+#endif //__DBGUTILS_MACRO_SANITY_H_
 
-// Routines for dumping the contents of pretty much anything
-// Currently C++ only
-#include "dbgutils/dump.h"
-
-
-#endif //__DBGUTILS_H

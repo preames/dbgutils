@@ -13,9 +13,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
+#include <cstring> //strcmp
 
+#ifndef NO_LIBUNWIND 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
+#endif
 
 #include "dbgutils.h"
 
@@ -34,6 +37,7 @@ namespace {
 
 extern "C" {
   void dbgutils_print_backtrace (void) {
+#ifndef NO_LIBUNWIND 
     unw_cursor_t cursor; unw_context_t uc;
     unw_word_t ip, sp;
     int i;
@@ -53,6 +57,9 @@ extern "C" {
       fprintf(stderr, "%s", print_buffer);
     }
     fprintf(stderr, "%s", "\n");
+#else //NO_LIBUNWIND
+    fprintf(stderr, "Backtrace unavailable on this platform due to lack of libundwind\n");
+#endif
   }
 
   void dbgutils_exit_with_backtrace (int status) {
@@ -90,29 +97,26 @@ namespace {
 #include <map>
 #include <string>
 namespace {
-  std::map<std::string, std::string> g_cached_env_values;
+  //IMPORTANT: DO NOT ALLOCATE
+  // Note: The assertion functions can be called from places where
+  // allocating memory via malloc would be _bad_.  (i.e. inside the
+  // allocator, before init, after shutdown, etc..)  DO NOT EVER
+  // allocate dynamic memory here.
 
-  const std::string get_environment_variable(const std::string& name,
-                                             const std::string& def,
-                                             bool force_refresh) {
-    if( force_refresh || 0 == g_cached_env_values.count( name ) ) {
-      const char* ptr = getenv(name.c_str());
-      g_cached_env_values[name] = (ptr ? std::string(ptr) : def);
-    }
-    
-    return g_cached_env_values[name];
-  }
-
-
-  bool get_boolean_environment_variable(const std::string name, 
+  bool get_boolean_environment_variable(const char* name, 
                                         bool def = false) {
-    std::string val = get_environment_variable(name, def ? "true" : "false", false);
-    if( val == "true" ) {
+    const char* env_cstr = getenv(name);
+    const char* def_cstr = def ? "true" : "false";
+    const char* val = env_cstr ? env_cstr : def_cstr; 
+    if( 0 == strcmp(val, "true") ) {
       return true;
-    } else if ( val == "false" ) {
+    } else if ( 0 == strcmp(val, "false") ) {
       return false;
     } else {
-      printf("Unrecognized value for '%s' environment variable.  ('true' or 'false' expected)\n", name.c_str());
+      //unrestricted printf allocates
+      puts("Unrecognized value for '");
+      puts(name);
+      puts("' environment variable.  ('true' or 'false' expected)\n");
       return def;
     }
   }

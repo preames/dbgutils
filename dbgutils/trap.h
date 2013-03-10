@@ -45,7 +45,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 // If we're in debug mode, and neither override macro is set, default
 // to enabling the enter debugger routines
-#if (defined _DEBUG) && (!defined DBGUTILS_DISABLE_ENTER_DEBUGGER) && (!defined DBGUTILS_ENABLE_ENTER_DEBUGGER)
+#if (defined DBGUTILS_DEBUG_MACRO_DEFINED) && (!defined DBGUTILS_DISABLE_ENTER_DEBUGGER) && (!defined DBGUTILS_ENABLE_ENTER_DEBUGGER)
 #define DBGUTILS_ENABLE_ENTER_DEBUGGER
 #endif
 
