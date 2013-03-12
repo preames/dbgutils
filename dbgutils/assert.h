@@ -27,7 +27,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     environmental variable is not legal.  (For example during global object
     construction or destruction, inside a memory allocator, etc..) */
 
-//__STRING comes from GCC headers (I think - model after GNU assert.h)
 //TODO: add branch hints here
 #define __DBGUTILS_STRING(exp) #exp
 #define DBGUTILS_ASSERT(exp) if(!(exp)) { dbgutils_assert_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}

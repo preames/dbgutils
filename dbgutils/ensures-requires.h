@@ -15,24 +15,50 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 /// Define a precondition that is required by a given method
 /// should only be used at the beginning of a method or function.
-#define DBGUTILS_REQUIRES(exp) do { DBGUTILS_ASSERT(exp); } while(0)
+#define DBGUTILS_REQUIRES(exp) if( !(exp) ) { dbgutils_requires_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}
 
 /// ensures only available under C++0x
 #ifdef __cplusplus
 
+void dbgutils_ensures_fail(const char* exp, const char* file,
+                           unsigned line, const char* func);
+void dbgutils_requires_fail(const char* exp, const char* file,
+                             unsigned line, const char* func);
+
 // TODO: Can we forward define this?  It would be really nice...
 #include <functional>
 
-#define __CLOSURE(exp) ( [&]() { return (exp); } )
+#define __CAPTURE(exp) ( [&]() -> bool { return (exp); } )
 
 // Define a helper class which runs a closure (passed as an boolean 
 // function object) at destruction - i.e. function exit. 
 namespace dbgutils {
   namespace __impl {
     struct __ensures_on_exit_t {
+      // The callable function which captures the condition to check on 
+      // scope exit.  
       std::function<bool(void)> m_func;
-      explicit inline __ensures_on_exit_t(std::function<bool(void)> closure ) : m_func(closure) {}
-      inline ~__ensures_on_exit_t() { DBGUTILS_ASSERT( m_func() ); }
+      /// Metadata about the declaration site
+      const char* m_exp;
+      const char* m_file;
+      const unsigned m_line;
+      const char* m_funcname;
+
+      explicit inline __ensures_on_exit_t(std::function<bool(void)> closure,
+                                          const char* exp, const char* file,
+                                          unsigned line, const char* func )
+        : m_func(closure), m_exp(exp), m_file(file),
+          m_line(line), m_funcname(func) {}
+      inline ~__ensures_on_exit_t() {
+        //TODO: should really capture the line and location
+        // of the original expression.  Asserting on the result
+        // here isn't the easiest thing to backtrace to the
+        // ensures clause - and then from there to the branch 
+        // which actually failed.
+        if( !m_func() ) {
+          dbgutils_ensures_fail(m_exp, m_file, m_line, m_funcname);
+        } 
+      }
     };
   }
 }
@@ -57,7 +83,7 @@ namespace dbgutils {
     results you expect.
 */
 //TODO: should capture the file, line, and function information for better reorting of errors.
-#define DBGUTILS_ENSURES(exp) dbgutils::__impl::__ensures_on_exit_t __CONCAT2(__ensures__,__LINE__)( __CLOSURE(exp) )
+#define DBGUTILS_ENSURES(exp) dbgutils::__impl::__ensures_on_exit_t __CONCAT2(__ensures__,__LINE__)( __CAPTURE(exp), __DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO )
 
 #endif
 

@@ -18,6 +18,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #ifndef NO_LIBUNWIND 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
+
+#include <cxxabi.h>
 #endif
 
 #include "dbgutils.h"
@@ -39,23 +41,43 @@ extern "C" {
   void dbgutils_print_backtrace (void) {
 #ifndef NO_LIBUNWIND 
     unw_cursor_t cursor; unw_context_t uc;
-    unw_word_t ip, sp;
+    unw_word_t ip, sp, offset;
+
     int i;
     
     unw_getcontext(&uc);
     unw_init_local(&cursor, &uc);
+    fprintf(stderr, "Backtrace (most recent call first)\n");
     for(i = 0; unw_step(&cursor) > 0; i++) {
       //  while () {
-      char buf[200];
-    
-      unw_get_proc_name(&cursor, buf, 200, NULL);
+      char buf[500];
+      unw_get_proc_name(&cursor, buf, 200, &offset);
       unw_get_reg(&cursor, UNW_REG_IP, &ip);
       unw_get_reg(&cursor, UNW_REG_SP, &sp);
-      snprintf(print_buffer, 500, 
-               "%s, ip = %lx, sp = %lx\n", buf, (long) ip, (long) sp);
+
+      //TODO: demangling is nice, but it would be really good to get
+      // line numbers and files here too when possible.  (Using relative
+      // paths for things nearby...) Maybe popen of addr2line?
+
+      // Going even one step beyond, would it be possibly to reconstruct
+      // the parameter values from the calling conventions?  (a.l.a. python)
+
+
+
+      int status = 0;
+      const char* demangled = __cxxabiv1::__cxa_demangle (buf, NULL, NULL, &status);
+      if( demangled ) {
+        snprintf(print_buffer, 500, 
+                 "%d) %s [offset = 0x%lx]\n   ip = 0x%lx, sp = 0x%lx\n", i, demangled, offset, (long) ip, (long) sp);
+      } else {
+        snprintf(print_buffer, 500, 
+                 "%d) %s [offset = 0x%lx]\n   ip = 0x%lx, sp = 0x%lx\n", i, buf, offset, (long) ip, (long) sp);
+      }
       print_buffer[499] = '\0';
       fprintf(stderr, "%s", print_buffer);
     }
+    fprintf(stderr, "%s", "Key: ip = instruction pointer (aka program counter), sp = stack pointer,\n     offset = instructions beyond start of function\n");  
+    fprintf(stderr, "%s", "Note: You may be able to use a tool like addr2line to convert the IP\n      values given above to line numbers in your original source code.\n");  
     fprintf(stderr, "%s", "\n");
 #else //NO_LIBUNWIND
     fprintf(stderr, "Backtrace unavailable on this platform due to lack of libundwind\n");
@@ -84,12 +106,12 @@ namespace {
     snprintf(print_buffer, 500,
              "Assertion Failure at %s:%d in %s\n", file, line, func);
     print_buffer[499] = '\0';
-    fprintf(stderr, "%s\n", print_buffer);
+    fprintf(stderr, "%s", print_buffer);
 
     snprintf(print_buffer, 500,
              "\tExpression: %s\n", exp);
     print_buffer[499] = '\0';
-    fprintf(stderr, "%s\n", print_buffer);
+    fprintf(stderr, "%s", print_buffer);
   }
 }
 
@@ -159,6 +181,44 @@ void dbgutils_assert_noabort_fail(const char* exp, const char* file,
     print_backtrace();
   if( should_enter_debugger_on_assert_failure() ) //default: true
     ENTER_DEBUGGER();
+}
+
+void dbgutils_ensures_fail(const char* exp, const char* file,
+                           unsigned line, const char* func) {
+  //defaults to aborting
+  snprintf(print_buffer, 500,
+           "Ensures Clause (Post Condition) Failure\n  Declared at %s:%d in %s\n", file, line, func);
+  print_buffer[499] = '\0';
+  fprintf(stderr, "%s", print_buffer);
+  
+  snprintf(print_buffer, 500,
+           "  Expression: %s\n", exp);
+  print_buffer[499] = '\0';
+  fprintf(stderr, "%s", print_buffer);
+  if( should_print_backtrace_on_assert_failure() ) //default: true
+    print_backtrace();
+  if( should_enter_debugger_on_assert_failure() ) //default: true
+    ENTER_DEBUGGER();
+  abort();
+}
+
+void dbgutils_requires_fail(const char* exp, const char* file,
+                           unsigned line, const char* func) {
+  //defaults to aborting
+  snprintf(print_buffer, 500,
+           "Requires Clause (Pre Condition) Failure\n  Declared at %s:%d in %s\n", file, line, func);
+  print_buffer[499] = '\0';
+  fprintf(stderr, "%s", print_buffer);
+  
+  snprintf(print_buffer, 500,
+           "  Expression: %s\n", exp);
+  print_buffer[499] = '\0';
+  fprintf(stderr, "%s", print_buffer);
+  if( should_print_backtrace_on_assert_failure() ) //default: true
+    print_backtrace();
+  if( should_enter_debugger_on_assert_failure() ) //default: true
+    ENTER_DEBUGGER();
+  abort();
 }
 
 namespace dbgutils {
