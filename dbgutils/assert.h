@@ -43,6 +43,19 @@ extern "C" {
                                   unsigned line, const char* func);
   void dbgutils_assert_noabort_fail(const char* exp, const char* file,
                                     unsigned line, const char* func);
+
+
+  // If this library is being used inside a malloc
+  // implementation, nasty things can happen if our stack
+  // walker or assert functions directly or indirectly call
+  // malloc.  If this is your use case, make sure you call
+  // this routine with a non-zero value before any possible
+  // call to the other functions/macros in this library.
+  // Note: This does a best effort, but the library should
+  // ALWAYS abort cleanly if a reentry situation does 
+  // happen.  If you find an exception, please file a bug.
+  int dbgutils_config_avoid_malloc(int value);
+
 #ifdef __cplusplus
 } //end extern "C"
 #endif
@@ -58,5 +71,7 @@ extern "C" {
 #  define DBGUTILS_FUNCTION_MACRO "n/a"
 # endif
 #endif
+
+
 
 #endif //__DBGUTILS_ASSERT_H

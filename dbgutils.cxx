@@ -26,6 +26,25 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 using namespace dbgutils;
 
+// These macros handle defining a region of code which 
+// can not be called in a retry manner.  If we detect this
+// happening, we abort messily to avoid infite loops.  
+// And yes, this logic is here for a reason.  When used
+// in the implementation of a malloc library, we did see
+// infinite crash loops.  Fun.
+
+#define NO_RENTRY_REGION_BEGIN static bool __rentry = false; \
+  if(__rentry) { ENTER_DEBUGGER(); abort(); }                 \
+  __rentry = true;
+
+#define NO_RENTRY_REGION_END __rentry = false;
+
+
+void test_func() {
+  NO_RENTRY_REGION_BEGIN;
+
+  NO_RENTRY_REGION_END;
+}
 
 namespace {
   //an internal buffer used to try to avoid allocation
@@ -35,10 +54,25 @@ namespace {
   // Note: This isn't perfect, but
   // it's better than printf.  TODO.  
   char print_buffer[500];
+
+
+  // Are we being used inside a malloc routine?  If so
+  // desperately avoid calling malloc at nearly any
+  // cost.
+  bool g_avoid_malloc = false;
 }
 
 extern "C" {
+  int dbgutils_config_avoid_malloc(int value) {
+    bool old = g_avoid_malloc;
+    g_avoid_malloc = value;
+    return old;
+  }
+
+
   void dbgutils_print_backtrace (void) {
+    NO_RENTRY_REGION_BEGIN;
+
 #ifndef NO_LIBUNWIND 
     unw_cursor_t cursor; unw_context_t uc;
     unw_word_t ip, sp, offset;
@@ -65,7 +99,11 @@ extern "C" {
 
 
       int status = 0;
-      const char* demangled = __cxxabiv1::__cxa_demangle (buf, NULL, NULL, &status);
+      // The demangler nicely uses malloc internally and there's absolutely no way
+      // to avoid doing so.  Avoid calling it if we can't safely malloc.
+      // Note: snprintf might also malloc, but haven't 
+      // encountered that yet.  If that happens, we'll abort.
+      const char* demangled = g_avoid_malloc ? NULL : __cxxabiv1::__cxa_demangle (buf, NULL, NULL, &status);
       if( demangled ) {
         snprintf(print_buffer, 500, 
                  "%d) %s [offset = 0x%lx]\n   ip = 0x%lx, sp = 0x%lx\n", i, demangled, offset, (long) ip, (long) sp);
@@ -82,16 +120,25 @@ extern "C" {
 #else //NO_LIBUNWIND
     fprintf(stderr, "Backtrace unavailable on this platform due to lack of libundwind\n");
 #endif
+
+    NO_RENTRY_REGION_END;
   }
 
   void dbgutils_exit_with_backtrace (int status) {
+    NO_RENTRY_REGION_BEGIN;
+
     print_backtrace();
     exit(status);
+
+    NO_RENTRY_REGION_END;
   }
 
   void dbgutils_abort_with_backtrace() {
+    NO_RENTRY_REGION_BEGIN;
     print_backtrace();
     abort();
+    NO_RENTRY_REGION_END;
+
   }
 }
 namespace dbgutils {
@@ -152,39 +199,53 @@ namespace {
   bool should_abort_on_assert_failure() {
     return get_boolean_environment_variable("abort_on_assert_failure", true);
   }
-
 }
 //TODO: It would be nice to have a full release mode which
 // prints no information and just exits.  (i.e. security)
 void dbgutils_assert_fail(const char* exp, const char* file,
                           unsigned line, const char* func) {
+  NO_RENTRY_REGION_BEGIN;
+
   //defaults to aborting
   if( should_abort_on_assert_failure() ) {
     dbgutils_assert_abort_fail(exp, file, line, func);
   } else {
     dbgutils_assert_noabort_fail(exp, file, line, func);
   }
+
+  NO_RENTRY_REGION_END;
 }
 void dbgutils_assert_abort_fail(const char* exp, const char* file,
                                 unsigned line, const char* func) {
+  NO_RENTRY_REGION_BEGIN;
+
   print_assertion_failure_message(exp, file, line, func);
   if( should_print_backtrace_on_assert_failure() ) //default: true
     print_backtrace();
   if( should_enter_debugger_on_assert_failure() ) //default: true
     ENTER_DEBUGGER();
   abort();
+  NO_RENTRY_REGION_END;
+
 }
 void dbgutils_assert_noabort_fail(const char* exp, const char* file,
                                   unsigned line, const char* func) {
+  NO_RENTRY_REGION_BEGIN;
+
   print_assertion_failure_message(exp, file, line, func);
   if( should_print_backtrace_on_assert_failure() ) //default: true
     print_backtrace();
   if( should_enter_debugger_on_assert_failure() ) //default: true
     ENTER_DEBUGGER();
+
+  NO_RENTRY_REGION_END;
+
 }
 
 void dbgutils_ensures_fail(const char* exp, const char* file,
                            unsigned line, const char* func) {
+  NO_RENTRY_REGION_BEGIN;
+
   //defaults to aborting
   snprintf(print_buffer, 500,
            "Ensures Clause (Post Condition) Failure\n  Declared at %s:%d in %s\n", file, line, func);
@@ -200,10 +261,15 @@ void dbgutils_ensures_fail(const char* exp, const char* file,
   if( should_enter_debugger_on_assert_failure() ) //default: true
     ENTER_DEBUGGER();
   abort();
+
+  NO_RENTRY_REGION_END;
+
 }
 
 void dbgutils_requires_fail(const char* exp, const char* file,
                            unsigned line, const char* func) {
+  NO_RENTRY_REGION_BEGIN;
+
   //defaults to aborting
   snprintf(print_buffer, 500,
            "Requires Clause (Pre Condition) Failure\n  Declared at %s:%d in %s\n", file, line, func);
@@ -219,6 +285,8 @@ void dbgutils_requires_fail(const char* exp, const char* file,
   if( should_enter_debugger_on_assert_failure() ) //default: true
     ENTER_DEBUGGER();
   abort();
+
+  NO_RENTRY_REGION_END;
 }
 
 namespace dbgutils {
