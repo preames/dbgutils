@@ -27,6 +27,17 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
     environmental variable is not legal.  (For example during global object
     construction or destruction, inside a memory allocator, etc..) */
 
+#ifdef __cplusplus
+namespace dbgutils {
+  class assertion_error: public error {
+    // TODO: fill out
+    virtual const char* what() const throw() {
+      return "Assertion failure";
+    }
+  };
+}
+#endif
+
 //TODO: add branch hints here
 #define __DBGUTILS_STRING(exp) #exp
 #define DBGUTILS_ASSERT(exp) if(!(exp)) { dbgutils_assert_fail(__DBGUTILS_STRING(exp), __FILE__, __LINE__, DBGUTILS_FUNCTION_MACRO); } else {}

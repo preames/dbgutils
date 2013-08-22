@@ -20,7 +20,7 @@ namespace dbgutils {
 
 
 namespace dbgutils {
-  bool g_spin_in_trap = true;
+  volatile bool g_spin_in_trap = true;
 }
 void dbgutils_debugger_barrier() {
   using namespace dbgutils;

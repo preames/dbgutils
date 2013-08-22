@@ -171,7 +171,6 @@ namespace {
   // allocating memory via malloc would be _bad_.  (i.e. inside the
   // allocator, before init, after shutdown, etc..)  DO NOT EVER
   // allocate dynamic memory here.
-
   bool get_boolean_environment_variable(const char* name, 
                                         bool def = false) {
     const char* env_cstr = getenv(name);

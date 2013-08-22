@@ -77,10 +77,12 @@ namespace dbgutils {
 
   /// A helper macro to define the type trait for a particular object type.
 #define DBGUTIL_HAS_DUMP_MEMBER(type)           \
-  template<>                                    \
-    struct has_member_dump_function<type> {                       \
-    static const bool value = true;  \
-  };
+  namespace dbgutils {                          \
+    template<>                                  \
+    struct has_member_dump_function<type> {     \
+      static const bool value = true;           \
+    };                                          \
+  }
 
   /* implementation detail -- dump_helper is used to dump an object.  
      It dispatches on the above type trait to either the member 
